@@ -1,3 +1,31 @@
+def newton_raphson_method(f = None, f_prime = None, x_0 = None, ABSOLUTE_Y_ERROR = 1e-15, MAX_ITERATION =  60, verbose = True):
+    #Absolute y error: if f(x) is smaller than this value, then return x
+    #Max iteration: if iteration count is larger than this value, then return x. Note that 2^50 > 1.1258999e+15.
+
+    if f == None:
+        raise ValueError("f is not defined.")
+    elif f_prime == None:
+        raise ValueError("f_prime is not defined.")
+    elif x_0 == None:
+        raise ValueError("Initial point is not given.")
+    elif f(x=x_0) == 0:
+        return x_0
+    
+    if(verbose):print(f"\nApplying Newton-Raphson method to f(x)={f.__name__} with initial point x={x_0}")
+    iteration_counter = 0
+    while iteration_counter < MAX_ITERATION:
+        if(f_prime(x=x_0) == 0):
+            raise ValueError("f_prime(x) is zero.")
+        x_0 = x_0 - f(x=x_0)/f_prime(x=x_0)
+        if(abs(f(x=x_0)) < ABSOLUTE_Y_ERROR):
+            if(verbose):print(f"Absolute y error: {abs(f(x=x_0))}")
+            return x_0
+        elif iteration_counter >= (MAX_ITERATION-1):
+            if(verbose):print(f"Max iteration: {iteration_counter+1}")
+            return x_0
+        if(verbose):print(f"Iteration: {iteration_counter+1} , x={x_0}, f(x)={f(x=x_0)}" )   
+        iteration_counter += 1
+
 def secant_method(f = None, x_0 = None, x_1 = None, ABSOLUTE_Y_ERROR = 1e-15,  MAX_ITERATION =  60, verbose = True):
     #Absolute y error: if f(x) is smaller than this value, then return x
     #Max iteration: if iteration count is larger than this value, then return x. Note that 2^50 > 1.1258999e+15.   
