@@ -1,4 +1,57 @@
-def newton_raphson_method(f = None, f_prime = None, x_0 = None, ABSOLUTE_Y_ERROR = 1e-15, MAX_ITERATION =  60, verbose = True):
+def mullers_method(f = None, x_0 = None, x_1 = None, x_2 = None, ABSOLUTE_Y_ERROR = 1e-15,  MAX_ITERATION =  60, verbose = True):
+    if f == None:
+        raise ValueError("f is not defined.")
+    elif x_0 == None or x_1 == None or x_2 == None:
+        raise ValueError("Initial points are not given.")
+    elif f(x=x_0) == 0:
+        return x_0
+    elif f(x=x_1) == 0:
+        return x_1
+    elif f(x=x_2) == 0:
+        return x_2
+    elif x_0 == x_1 or x_0 == x_2 or x_1 == x_2:
+        raise ValueError("Initial points can not be the same.")
+
+    if(verbose):print(f"\nApplying Muller's method to f(x)={f.__name__} with initial points x= ({x_0} , {x_1} , {x_2})")
+
+    def second_order_lagrange_polynomial_roots(f = None, x_0 = 0, x_1 = 0, x_2 = 0):
+        if(x_0 == x_1 or x_0 == x_2 or x_1 == x_2):
+            raise ValueError("lagrange polynomial: Initial points can not be the same .")
+
+        alfa_0 = f(x=x_0)/((x_0-x_1)*(x_0-x_2))
+        alfa_1 = f(x=x_1)/((x_1-x_0)*(x_1-x_2))
+        alfa_2 = f(x=x_2)/((x_2-x_0)*(x_2-x_1))
+
+        #for ax^2 + bx + c
+        a = alfa_0 + alfa_1 + alfa_2
+        b = -(alfa_0*(x_1+x_2) + alfa_1*(x_0+x_2) + alfa_2*(x_0+x_1))
+        c = alfa_0*x_1*x_2 + alfa_1*x_0*x_2 + alfa_2*x_0*x_1
+
+        root_1 = (-b + (b**2 - 4*a*c)**0.5)/(2*a)
+        root_2 = (-b - (b**2 - 4*a*c)**0.5)/(2*a)
+
+        return root_1, root_2
+
+    
+    iteration_counter = 0
+    while iteration_counter < MAX_ITERATION:
+
+        root_1,root_2 = second_order_lagrange_polynomial_roots(f=f, x_0=x_0, x_1=x_1, x_2=x_2)
+        x_0 = x_1
+        x_1 = x_2
+        x_2 = root_1 if abs(x_2-root_1) < abs(x_2-root_2) else root_2
+
+        if(abs(f(x=x_2)) < ABSOLUTE_Y_ERROR):
+            if(verbose):print(f"Absolute y error: {abs(f(x=x_2))}")
+            return x_2
+        elif iteration_counter >= (MAX_ITERATION-1):
+            if(verbose):print(f"Max iteration: {iteration_counter+1}")
+            return x_2
+        
+        print(f"Iteration: {iteration_counter+1} , x_0={x_0}, x_1={x_1}, x_2={x_2}, f(x_2)={f(x=x_2)}" )
+        iteration_counter += 1
+
+def newton_raphson_method(f = None, f_prime = None, x_0 = None, ABSOLUTE_Y_ERROR = 1e-15, MAX_ITERATION =  100, verbose = True):
     #Absolute y error: if f(x) is smaller than this value, then return x
     #Max iteration: if iteration count is larger than this value, then return x. Note that 2^50 > 1.1258999e+15.
 
@@ -26,7 +79,7 @@ def newton_raphson_method(f = None, f_prime = None, x_0 = None, ABSOLUTE_Y_ERROR
         if(verbose):print(f"Iteration: {iteration_counter+1} , x={x_0}, f(x)={f(x=x_0)}" )   
         iteration_counter += 1
 
-def secant_method(f = None, x_0 = None, x_1 = None, ABSOLUTE_Y_ERROR = 1e-15,  MAX_ITERATION =  60, verbose = True):
+def secant_method(f = None, x_0 = None, x_1 = None, ABSOLUTE_Y_ERROR = 1e-15,  MAX_ITERATION =  100, verbose = True):
     #Absolute y error: if f(x) is smaller than this value, then return x
     #Max iteration: if iteration count is larger than this value, then return x. Note that 2^50 > 1.1258999e+15.   
 
@@ -59,7 +112,7 @@ def secant_method(f = None, x_0 = None, x_1 = None, ABSOLUTE_Y_ERROR = 1e-15,  M
         if(verbose):print(f"Iteration: {iteration_counter+1} , x_0={x_0}, x_1={x_1} f(x_1)={f(x=x_1)}" )   
         iteration_counter += 1
 
-def false_position_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR = 1e-15,  ABSOLUTE_X_ERROR = 1e-15, RELATIVE_X_ERROR =  1e-15, MAX_ITERATION =  60, verbose = True):
+def false_position_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR = 1e-15,  ABSOLUTE_X_ERROR = 1e-15, RELATIVE_X_ERROR =  1e-15, MAX_ITERATION =  100, verbose = True):
     #Absolute y error: if f(x) is smaller than this value, then return x
     #Absolute x error: if approximated x is closer to exact value smaller than this value, then return x
     #Relative x error: if (bracket length)/(x_left) smaller than this value, then return x
@@ -111,7 +164,7 @@ def false_position_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ER
         if(verbose):print(f"Iteration: {iteration_counter+1} , ({left_x} , {right_x}), y={f(x=(left_x + right_x)/2)}" )
         iteration_counter += 1
 
-def bisection_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR = 1e-15,  ABSOLUTE_X_ERROR = 1e-15, RELATIVE_X_ERROR =  1e-15, MAX_ITERATION =  60, verbose = True):
+def bisection_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR = 1e-15,  ABSOLUTE_X_ERROR = 1e-15, RELATIVE_X_ERROR =  1e-15, MAX_ITERATION =  75, verbose = True):
     #Absolute y error: if f(x) is smaller than this value, then return x
     #Absolute x error: if approximated x is closer to exact value smaller than this value, then return x
     #Relative x error: if (bracket length)/(x_left) smaller than this value, then return x
