@@ -1,4 +1,4 @@
-import components as component_models
+import component_classes
 import numpy as np
 
 ambient_temperature = 25 #celcius, 25 is the room temperature
@@ -8,9 +8,9 @@ ground_node = 0
 components = []
 
 # DEFINE VOLTAGE SOURCES 
-V2 = component_models.voltageSourceModel(name = "V2", node_p = 2, node_n = 1, type = "dc", type_dict = {"dc_voltage": 5})
+V2 = component_classes.voltageSourceModel(name = "V2", node_p = 2, node_n = 1, type = "dc", type_dict = {"dc_voltage": 5})
 components.append(V2)
-V1 = component_models.voltageSourceModel(name = "V1", node_p = 1, node_n = 0, type = "dc", type_dict = {"dc_voltage": 5})
+V1 = component_classes.voltageSourceModel(name = "V1", node_p = 1, node_n = 0, type = "dc", type_dict = {"dc_voltage": 5})
 components.append(V1)
 
 # DEFINE CURRENT SOURCES
@@ -19,11 +19,11 @@ components.append(V1)
 resistor_5_ohm_v1 = lambda resistor_tempetature: 5+max(0.1*(resistor_tempetature-25),0)
 resistor_10_ohm_v1 = lambda resistor_tempetature: 10+max(0.2*(resistor_tempetature-25),0)
 
-R1 = component_models.resistorModel(name = "R1", node_p = 2, node_n = 3, resistance_function = resistor_10_ohm_v1, heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
+R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 3, resistance_function = resistor_10_ohm_v1, heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R1)
 
 
-R2 = component_models.resistorModel(name = "R2", node_p = 3, node_n = 0, resistance_function =resistor_5_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
+R2 = component_classes.resistorModel(name = "R2", node_p = 3, node_n = 0, resistance_function =resistor_5_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R2)
 
 # DEFINE INDUCTORS
