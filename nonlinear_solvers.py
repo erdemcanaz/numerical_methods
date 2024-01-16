@@ -1,4 +1,37 @@
-def false_position_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR = 1e-15,  ABSOLUTE_X_ERROR = 1e-15, RELATIVE_X_ERROR =  1e-15, MAX_ITERATION =  55, verbose = True):
+def secant_method(f = None, x_0 = None, x_1 = None, ABSOLUTE_Y_ERROR = 1e-15,  MAX_ITERATION =  60, verbose = True):
+    #Absolute y error: if f(x) is smaller than this value, then return x
+    #Max iteration: if iteration count is larger than this value, then return x. Note that 2^50 > 1.1258999e+15.   
+
+    if f == None:
+      raise ValueError("f is not defined.")
+    elif x_0 == None or x_1 == None:
+      raise ValueError("Initial points are not given.")
+    elif f(x=x_0) == 0:
+      return x_0
+    elif f(x=x_1) == 0:
+        return x_1
+    elif x_0 == x_1:
+        raise ValueError("Initial points can not be the same.")
+
+
+    if(verbose):print(f"\nApplying secant method to f(x)={f.__name__} with initial point x= ({x_0} , {x_1})")
+    iteration_counter = 0
+    while iteration_counter < MAX_ITERATION:
+        m=(f(x=x_1)-f(x=x_0))/(x_1-x_0)
+        if m == 0:
+           raise ValueError("Slope is zero.")
+        x_0 = x_1
+        x_1 = x_1 - f(x=x_1)/m
+        if(abs(f(x=x_1)) < ABSOLUTE_Y_ERROR):
+            if(verbose):print(f"Absolute y error: {abs(f(x=x_1))}")
+            return x_1
+        elif iteration_counter >= (MAX_ITERATION-1):
+            if(verbose):print(f"Max iteration: {iteration_counter+1}")
+            return x_1
+        if(verbose):print(f"Iteration: {iteration_counter+1} , x_0={x_0}, x_1={x_1} f(x_1)={f(x=x_1)}" )   
+        iteration_counter += 1
+
+def false_position_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR = 1e-15,  ABSOLUTE_X_ERROR = 1e-15, RELATIVE_X_ERROR =  1e-15, MAX_ITERATION =  60, verbose = True):
     #Absolute y error: if f(x) is smaller than this value, then return x
     #Absolute x error: if approximated x is closer to exact value smaller than this value, then return x
     #Relative x error: if (bracket length)/(x_left) smaller than this value, then return x
@@ -50,7 +83,7 @@ def false_position_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ER
         if(verbose):print(f"Iteration: {iteration_counter+1} , ({left_x} , {right_x}), y={f(x=(left_x + right_x)/2)}" )
         iteration_counter += 1
 
-def bisection_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR = 1e-15,  ABSOLUTE_X_ERROR = 1e-15, RELATIVE_X_ERROR =  1e-15, MAX_ITERATION =  55, verbose = True):
+def bisection_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR = 1e-15,  ABSOLUTE_X_ERROR = 1e-15, RELATIVE_X_ERROR =  1e-15, MAX_ITERATION =  60, verbose = True):
     #Absolute y error: if f(x) is smaller than this value, then return x
     #Absolute x error: if approximated x is closer to exact value smaller than this value, then return x
     #Relative x error: if (bracket length)/(x_left) smaller than this value, then return x
@@ -88,7 +121,7 @@ def bisection_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR =
         if (right_x - left_x < ABSOLUTE_X_ERROR): #Absolute x error: 
             if(verbose):print(f"Absolute x error: {right_x - left_x}")
             return x_mid
-        elif( (right_x - left_x)/(min(abs(left_x),abs(right_x))) < RELATIVE_X_ERROR+1e-10): #Relative x error
+        elif( (right_x - left_x)/(min(abs(left_x),abs(right_x))+1e-15) < RELATIVE_X_ERROR): #Relative x error
             if(verbose):print(f"Relative x error: {(right_x - left_x)/(min(abs(left_x),abs(right_x)))}")
             return x_mid
         elif iteration_counter >= (MAX_ITERATION-1): #Max iteration
