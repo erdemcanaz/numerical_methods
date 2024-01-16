@@ -137,18 +137,8 @@ class resistorModel:
 
     def get_temperature(self):
         return self.RESISTOR_TEMPERATURE
-    
-    def get_temperature_change(self, voltage_drop, ambient_temperature, time_step):
-        resistance = self.get_resistance()
-        current = voltage_drop/resistance
-        electrical_power = (current**2)*resistance
-        temperature_difference = self.RESISTOR_TEMPERATURE-ambient_temperature
-        heat_transfer_power =  self.HEAT_TRANSFER_COEFFICIENT*temperature_difference
-        total_heat_energy_gained = (electrical_power-heat_transfer_power)*time_step
-        total_resistor_temperature_change = total_heat_energy_gained/self.HEAT_CAPACITY
-        return total_resistor_temperature_change
-    
-    def update_resistor_temperature(self, voltage, ambient_temperature, time_step):
+     
+    def update_resistor_temperature(self, voltage, ambient_temperature, time_step, max_temperature_change_allowed):
         resistance = self.get_resistance()
         current = voltage/resistance # current flowing through the resistor
         electrical_power = (current**2)*resistance # how much electrical power is dissipated in the resistor
@@ -157,6 +147,10 @@ class resistorModel:
         total_heat_energy_gained = (electrical_power-heat_transfer_power)*time_step
         total_resistor_temperature_change = total_heat_energy_gained/self.HEAT_CAPACITY
         self.RESISTOR_TEMPERATURE += total_resistor_temperature_change
+        if abs(total_resistor_temperature_change) > max_temperature_change_allowed:
+            return False, total_resistor_temperature_change
+        else:
+            return True, total_resistor_temperature_change
 
 class capacitorModel:
     def __init__(self, name, node_p= None, node_n = None , capacitance_function = None, initial_voltage = None):
@@ -181,11 +175,17 @@ class capacitorModel:
         return self.VOLTAGE
     
     def get_voltage_change(self, current, time_step):
-        capacitance = self.get_capacitance()
-        return (current*time_step)/capacitance
+       
+        return 
     
-    def update_voltage(self, current, time_step):
-        self.VOLTAGE += self.get_voltage_change(current, time_step)
+    def update_voltage(self, current, time_step, max_voltage_change_allowed):
+        capacitance = self.get_capacitance()
+        voltage_change = (current*time_step)/capacitance
+        self.VOLTAGE += voltage_change
+        if abs(voltage_change) > max_voltage_change_allowed:
+            return False, voltage_change
+        else:
+            return True, voltage_change
 
 class inductorModel:
     def __init__(self, name, node_p= None, node_n = None , inductance_function = None, initial_current = None):
@@ -208,14 +208,15 @@ class inductorModel:
     
     def get_current(self):
         return self.CURRENT
-    
-    def get_current_change(self, voltage, time_step):
+      
+    def update_current(self, voltage, time_step, max_current_change_allowed):
         inductance = self.get_inductance()
-        return (voltage*time_step)/inductance
-    
-    def update_current(self, voltage, time_step):
-        self.CURRENT += self.get_current_change(voltage, time_step)
-    
+        current_change = (voltage*time_step)/inductance
+        self.CURRENT += current_change
+        if abs(current_change) > max_current_change_allowed:
+            return False, current_change
+        else:
+            return True, current_change  
 
     
 

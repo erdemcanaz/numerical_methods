@@ -14,7 +14,7 @@ V1 = component_classes.voltageSourceModel(name = "V1", node_p = 1, node_n = 0, t
 components.append(V1)
 
 # DEFINE CURRENT SOURCES
-I1 = component_classes.currentSourceModel(name = "I1", node_p = 3, node_n = 0, type = "dc", type_dict = {"dc_current": -10})
+I1 = component_classes.currentSourceModel(name = "I1", node_p = 3, node_n = 0, type = "dc", type_dict = {"dc_current": -1})
 components.append(I1)
 
 # DEFINE RESISTORS
@@ -40,7 +40,7 @@ L1 = component_classes.inductorModel(name = "L1", node_p = 5, node_n = 2, induct
 components.append(L1)
 
 # DEFINE CAPCACITORS
-capacitor_10uF_v1 = lambda capacitor_voltage: 1e-6
+capacitor_10uF_v1 = lambda capacitor_voltage: 10e-6
 
 C1 = component_classes.capacitorModel(name = "C1", node_p = 4, node_n = 0, capacitance_function = capacitor_10uF_v1, initial_voltage = 0)
 components.append(C1)
@@ -102,22 +102,22 @@ for node in all_nodes:
     
 
 #start simulation ===============================================================
-max_time_step = 1e-5 #seconds
-min_time_step = 1e-7 #seconds
+max_time_step = 1e-2 #seconds
+min_time_step = 1e-9 #seconds
 
-time_step_now = max_time_step #seconds
+time_step_now = min_time_step #seconds
 simulation_time = 1 #seconds
 time_now = 0 #seconds
 
 
-MAX_RESISTOR_TEMPERATURE_CHANGE = 1 #celcius
+MAX_RESISTOR_TEMPERATURE_CHANGE = 2.5 #celcius
 MAX_CAPACITOR_VOLTAGE_CHANGE = 0.05 #volts
 MAX_INDUCTOR_CURRENT_CHANGE = 0.05 #amperes
 
 last_percent_printed = 0
 while time_now < simulation_time:
     if(time_now/simulation_time*100 - last_percent_printed > 1):
-        print(f"Simulation progress: {time_now/simulation_time*100:.1f}%")
+        print(f"Simulation progress: {time_now/simulation_time*100:.1f}%  Time step (us): {time_step_now*(1e6):.0f}")
         last_percent_printed = time_now/simulation_time*100
 
     #append ground node information 
@@ -199,7 +199,18 @@ while time_now < simulation_time:
     #solve the system of equations (approximated by least squares method)
     approximated_solution, residuals, rank, s = np.linalg.lstsq(info_matrix, result_vector, rcond=None)
    
+    #=====================================================================================================
+    # #prints the solution to the terminal
+    # for solution_index, solution in enumerate(approximated_solution):       
+    #     val = solution[0]
+    #     for unknown, unknown_index in unknowns.items():
+    #         if solution_index == unknown_index:
+    #             print(unknown, val)
+    #=====================================================================================================
+
+
     #update component states
+    should_increase_time_step = True
     for component in components:
         component_p = component.NODE_P
         component_n = component.NODE_N
@@ -209,27 +220,30 @@ while time_now < simulation_time:
             positive_node_voltage = approximated_solution[unknowns[f"V_{component_p}"]][0]
             negative_node_voltage = approximated_solution[unknowns[f"V_{component_n}"]][0]
             voltage_difference = positive_node_voltage - negative_node_voltage
-            component.update_resistor_temperature(voltage_difference, ambient_temperature, time_step_now)
+            b, del_T = component.update_resistor_temperature(voltage_difference, ambient_temperature, time_step_now, MAX_RESISTOR_TEMPERATURE_CHANGE)
+            should_increase_time_step = should_increase_time_step and b
+            #print(f"Resistor temperature: {component.get_temperature()}, temperature change: {del_T}")
+
         elif component.get_component_category() == "CAPACITOR":
             capacitor_current = approximated_solution[unknowns[f"I_{component.NAME}"]][0]
-            component.update_voltage(capacitor_current, time_step_now)
-
-            #TODO: check if the voltage change is too high, if so decrease the time step
-            #component.update_voltage(approximated_solution[unknowns[f"I_{component.NAME}"]][0], time_step_now)
-            pass
+            b, del_V = component.update_voltage(capacitor_current, time_step_now, MAX_CAPACITOR_VOLTAGE_CHANGE)
+            should_increase_time_step = should_increase_time_step and b
+            #print(f"Capacitor voltage: {component.get_voltage()}, voltage change: {del_V}")
+            
         elif component.get_component_category() == "INDUCTOR":
             positive_node_voltage = approximated_solution[unknowns[f"V_{component_p}"]][0]
             negative_node_voltage = approximated_solution[unknowns[f"V_{component_n}"]][0]
             voltage_difference = positive_node_voltage - negative_node_voltage
-            component.update_current(voltage_difference, time_step_now)
-            #TODO: check if the current change is too high, if so decrease the time step
-    
+            b, del_I= component.update_current(voltage_difference, time_step_now, MAX_INDUCTOR_CURRENT_CHANGE)
+            should_increase_time_step = should_increase_time_step and b    
+            #print(f"Inductor current: {component.get_current()}, del_I: {del_I}")
 
-    #update states if the state changes are small enough, otherwise decrease the time step
+    #update states if the state changes are small enough, otherwise decrease the time step   
+    if should_increase_time_step:
+        time_step_now = min(max_time_step, time_step_now*2)
+    else:
+        time_step_now = max(min_time_step, time_step_now/2)
+
     time_now = time_now + time_step_now
 
-    # for solution_index, solution in enumerate(approximated_solution):       
-    #     val = solution[0]
-    #     for unknown, unknown_index in unknowns.items():
-    #         if solution_index == unknown_index:
-    #            print(unknown, val)
+
