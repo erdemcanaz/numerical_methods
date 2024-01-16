@@ -213,7 +213,6 @@ def bisection_method(f = None, left_x = None, right_x = None, ABSOLUTE_Y_ERROR =
         iteration_counter += 1
 
         
-        
 
    
-    
+     
