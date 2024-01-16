@@ -144,6 +144,37 @@ class resistorModel:
         total_resistor_temperature_change = total_heat_energy_gained/self.HEAT_CAPACITY
         self.RESISTOR_TEMPERATURE += total_resistor_temperature_change
 
+class capacitorModel:
+    def __init__(self, name, node_p= None, node_n = None , capacitance_function = None, initial_voltage = None):
+        #name : name of the capacitor
+        #node1 : positive node according to passive sign convention
+        #node2 : negative node according to passive sign convention
+        #capacitance_function: function that returns the capacitance of the capacitor at a given voltage
+        #initial_voltage: initial voltage of the capacitor (volts)
+        self.NAME = name
+        self.NODE_P = node_p
+        self.NODE_N = node_n
+        self.CAPACITANCE_FUNCTION = capacitance_function
+        self.VOLTAGE = initial_voltage
+
+    def get_component_category(self):
+        return "CAPACITOR"
+    
+    def get_capacitance(self):
+        return self.CAPACITANCE_FUNCTION(self.VOLTAGE)
+    
+    def get_voltage(self):
+        return self.VOLTAGE
+    
+    def get_voltage_change(self, current, time_step):
+        capacitance = self.get_capacitance()
+        return (current*time_step)/capacitance
+    
+    def update_voltage(self, current, time_step):
+        self.VOLTAGE += self.get_voltage_change(current, time_step)
+        
+
+
     
 
     

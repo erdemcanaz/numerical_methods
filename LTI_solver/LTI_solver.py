@@ -27,11 +27,17 @@ components.append(R1)
 R2 = component_classes.resistorModel(name = "R2", node_p = 3, node_n = 0, resistance_function =resistor_5_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R2)
 
+R3 = component_classes.resistorModel(name = "R3", node_p = 4, node_n = 1, resistance_function =resistor_5_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
+components.append(R3)
+
 # DEFINE INDUCTORS
 
 # DEFINE CAPCACITORS
+capacitor_10uF_v1 = lambda capacitor_voltage: 10e-6
+C1 = component_classes.capacitorModel(name = "C1", node_p = 4, node_n = 0, capacitance_function = capacitor_10uF_v1, initial_voltage = 0)
+components.append(C1)
 
-#extract unknowns
+#define unknowns
 unknowns = {
    
 }
@@ -92,7 +98,7 @@ for node in all_nodes:
 max_time_step = 0.01 #seconds
 time_step_now = max_time_step #seconds
 simulation_time = max_time_step-0.0001 #seconds
-
+print(unknowns)
 time_now = 0 #seconds
 while time_now < simulation_time:
     
@@ -106,7 +112,7 @@ while time_now < simulation_time:
         if component.get_component_category() == "VOLTAGE-SOURCE" or component.get_component_category() == "CAPACITOR":   
             positive_node = component.NODE_P
             negative_node = component.NODE_N
-            voltage_difference = component.get_voltage(t=0)
+            voltage_difference = component.get_voltage(t=0) if component.get_component_category() == "VOLTAGE-SOURCE" else component.get_voltage()
             unknown_p_index = unknowns[f"V_{positive_node}"]
             unknown_n_index = unknowns[f"V_{negative_node}"]
 
@@ -155,6 +161,12 @@ while time_now < simulation_time:
                     B[0,0] += -current
                 else:
                     B[0,0] += current
+            elif(component_category == "CAPACITOR"):
+                matching_capacitor_current_index = unknowns[f"I_{component.NAME}"]
+                if matching_node == component_p: #positive terminal is connected to the node, current is leaving
+                    A[0, matching_capacitor_current_index] = 1
+                else: #negative terminal is connected to the node, current is entering
+                    A[0, matching_capacitor_current_index] = -1
                    
                    
         info_matrix = np.append(info_matrix, A, axis=0)
