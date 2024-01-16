@@ -135,8 +135,22 @@ class resistorModel:
     def get_resistance(self):
         return self.RESISTANCE_FUNCTION(self.RESISTOR_TEMPERATURE)
 
-    def update_resistor_temperature(self, current, ambient_temperature, time_step):
+    def get_temperature(self):
+        return self.RESISTOR_TEMPERATURE
+    
+    def get_temperature_change(self, voltage_drop, ambient_temperature, time_step):
         resistance = self.get_resistance()
+        current = voltage_drop/resistance
+        electrical_power = (current**2)*resistance
+        temperature_difference = self.RESISTOR_TEMPERATURE-ambient_temperature
+        heat_transfer_power =  self.HEAT_TRANSFER_COEFFICIENT*temperature_difference
+        total_heat_energy_gained = (electrical_power-heat_transfer_power)*time_step
+        total_resistor_temperature_change = total_heat_energy_gained/self.HEAT_CAPACITY
+        return total_resistor_temperature_change
+    
+    def update_resistor_temperature(self, voltage, ambient_temperature, time_step):
+        resistance = self.get_resistance()
+        current = voltage/resistance # current flowing through the resistor
         electrical_power = (current**2)*resistance # how much electrical power is dissipated in the resistor
         temperature_difference = self.RESISTOR_TEMPERATURE-ambient_temperature # how much hotter the resistor is compared to the ambient
         heat_transfer_power =  self.HEAT_TRANSFER_COEFFICIENT*temperature_difference # how much heat is transferred from the resistor to the ambient
@@ -172,9 +186,35 @@ class capacitorModel:
     
     def update_voltage(self, current, time_step):
         self.VOLTAGE += self.get_voltage_change(current, time_step)
-        
 
+class inductorModel:
+    def __init__(self, name, node_p= None, node_n = None , inductance_function = None, initial_current = None):
+        #name : name of the inductor
+        #node1 : positive node according to passive sign convention
+        #node2 : negative node according to passive sign convention
+        #inductance_function: function that returns the inductance of the inductor at a given current
+        #initial_current: initial current of the inductor (amperes)
+        self.NAME = name
+        self.NODE_P = node_p
+        self.NODE_N = node_n
+        self.INDUCTANCE_FUNCTION = inductance_function
+        self.CURRENT = initial_current
 
+    def get_component_category(self):
+        return "INDUCTOR"
+    
+    def get_inductance(self):
+        return self.INDUCTANCE_FUNCTION(self.CURRENT)
+    
+    def get_current(self):
+        return self.CURRENT
+    
+    def get_current_change(self, voltage, time_step):
+        inductance = self.get_inductance()
+        return (voltage*time_step)/inductance
+    
+    def update_current(self, voltage, time_step):
+        self.CURRENT += self.get_current_change(voltage, time_step)
     
 
     

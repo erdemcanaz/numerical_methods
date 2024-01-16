@@ -30,17 +30,23 @@ components.append(R2)
 R3 = component_classes.resistorModel(name = "R3", node_p = 4, node_n = 1, resistance_function =resistor_5_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R3)
 
+R4 = component_classes.resistorModel(name = "R4", node_p = 5, node_n = 0, resistance_function =resistor_10_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
+components.append(R4)
+
 # DEFINE INDUCTORS
+inductor_1mH_v1 = lambda inductor_current: 1e-3
+
+L1 = component_classes.inductorModel(name = "L1", node_p = 5, node_n = 2, inductance_function = inductor_1mH_v1, initial_current = 0)
+components.append(L1)
 
 # DEFINE CAPCACITORS
-capacitor_10uF_v1 = lambda capacitor_voltage: 10e-6
+capacitor_10uF_v1 = lambda capacitor_voltage: 1e-6
+
 C1 = component_classes.capacitorModel(name = "C1", node_p = 4, node_n = 0, capacitance_function = capacitor_10uF_v1, initial_voltage = 0)
 components.append(C1)
 
 #define unknowns
-unknowns = {
-   
-}
+unknowns = {}
 unknown_index_counter = 0
 all_nodes = []
 for component in components:
@@ -58,13 +64,14 @@ for component in components:
         unknown_index_counter += 1
 
 number_of_unknowns = len(unknowns)
-#=========================CHECK IF THE CIRCUIT IS VALID=============================      
+#=========================CHECK IF THE CIRCUIT IS VALID=============================     
+# inductor and current source related checks are not implemented yet
+ 
 #check if the component names are unique
 for component_index, component in enumerate(components):
   for other_component_index, other_component in enumerate(components):
     if component.NAME == other_component.NAME and component_index != other_component_index:
-      raise Exception(f"Component names {component.NAME} are not unique.")
-    
+      raise Exception(f"Component names {component.NAME} are not unique.")    
 #check if voltage sources are short circuited
 for component_index, component in enumerate(components):
   if component.get_component_category() == "VOLTAGE-SOURCE":
@@ -92,16 +99,27 @@ for node in all_nodes:
             break
     if is_connected == False:
         raise Exception(f"Node {node} is left floating.")
-     
+    
 
 #start simulation ===============================================================
-max_time_step = 0.01 #seconds
+max_time_step = 1e-5 #seconds
+min_time_step = 1e-7 #seconds
+
 time_step_now = max_time_step #seconds
-simulation_time = max_time_step-0.0001 #seconds
-print(unknowns)
+simulation_time = 1 #seconds
 time_now = 0 #seconds
+
+
+MAX_RESISTOR_TEMPERATURE_CHANGE = 1 #celcius
+MAX_CAPACITOR_VOLTAGE_CHANGE = 0.05 #volts
+MAX_INDUCTOR_CURRENT_CHANGE = 0.05 #amperes
+
+last_percent_printed = 0
 while time_now < simulation_time:
-    
+    if(time_now/simulation_time*100 - last_percent_printed > 1):
+        print(f"Simulation progress: {time_now/simulation_time*100:.1f}%")
+        last_percent_printed = time_now/simulation_time*100
+
     #append ground node information 
     info_matrix = np.zeros((1, number_of_unknowns))
     info_matrix[0,unknowns[f"V_{ground_node}"]] = 1
@@ -112,7 +130,7 @@ while time_now < simulation_time:
         if component.get_component_category() == "VOLTAGE-SOURCE" or component.get_component_category() == "CAPACITOR":   
             positive_node = component.NODE_P
             negative_node = component.NODE_N
-            voltage_difference = component.get_voltage(t=0) if component.get_component_category() == "VOLTAGE-SOURCE" else component.get_voltage()
+            voltage_difference = component.get_voltage(t=time_now) if component.get_component_category() == "VOLTAGE-SOURCE" else component.get_voltage()
             unknown_p_index = unknowns[f"V_{positive_node}"]
             unknown_n_index = unknowns[f"V_{negative_node}"]
 
@@ -167,20 +185,51 @@ while time_now < simulation_time:
                     A[0, matching_capacitor_current_index] = 1
                 else: #negative terminal is connected to the node, current is entering
                     A[0, matching_capacitor_current_index] = -1
+            elif(component_category == "INDUCTOR"):
+                current = component.get_current()
+                if matching_node == component_p: #positive terminal is connected to the node, current is leaving
+                    B[0,0] += -current
+                else:
+                    B[0,0] += current
                    
                    
         info_matrix = np.append(info_matrix, A, axis=0)
         result_vector = np.append(result_vector, B, axis=0)
     
+    #solve the system of equations (approximated by least squares method)
     approximated_solution, residuals, rank, s = np.linalg.lstsq(info_matrix, result_vector, rcond=None)
-    print(f"approximated_solution: {approximated_solution}")                  
+   
+    #update component states
+    for component in components:
+        component_p = component.NODE_P
+        component_n = component.NODE_N
 
-                
-                    
-                 
+        if component.get_component_category() == "RESISTOR":
+            #TODO: check if the temperature change is too high, if so decrease the time step
+            positive_node_voltage = approximated_solution[unknowns[f"V_{component_p}"]][0]
+            negative_node_voltage = approximated_solution[unknowns[f"V_{component_n}"]][0]
+            voltage_difference = positive_node_voltage - negative_node_voltage
+            component.update_resistor_temperature(voltage_difference, ambient_temperature, time_step_now)
+        elif component.get_component_category() == "CAPACITOR":
+            capacitor_current = approximated_solution[unknowns[f"I_{component.NAME}"]][0]
+            component.update_voltage(capacitor_current, time_step_now)
 
-
-        
+            #TODO: check if the voltage change is too high, if so decrease the time step
+            #component.update_voltage(approximated_solution[unknowns[f"I_{component.NAME}"]][0], time_step_now)
+            pass
+        elif component.get_component_category() == "INDUCTOR":
+            positive_node_voltage = approximated_solution[unknowns[f"V_{component_p}"]][0]
+            negative_node_voltage = approximated_solution[unknowns[f"V_{component_n}"]][0]
+            voltage_difference = positive_node_voltage - negative_node_voltage
+            component.update_current(voltage_difference, time_step_now)
+            #TODO: check if the current change is too high, if so decrease the time step
+    
 
     #update states if the state changes are small enough, otherwise decrease the time step
     time_now = time_now + time_step_now
+
+    # for solution_index, solution in enumerate(approximated_solution):       
+    #     val = solution[0]
+    #     for unknown, unknown_index in unknowns.items():
+    #         if solution_index == unknown_index:
+    #            print(unknown, val)
