@@ -1,9 +1,11 @@
 import component_classes
 import numpy as np
+import matplotlib.pyplot as plt
+from pprint import pprint
 
 ambient_temperature = 25 #celcius, 25 is the room temperature
 
-# =============================DEFINE THE CIRCUIT==============================
+#=============================DEFINE THE CIRCUIT==============================
 ground_node = 0
 components = []
 
@@ -18,8 +20,8 @@ I1 = component_classes.currentSourceModel(name = "I1", node_p = 3, node_n = 0, t
 components.append(I1)
 
 # DEFINE RESISTORS
-resistor_5_ohm_v1 = lambda resistor_tempetature: 5+max(0.1*(resistor_tempetature-25),0)
-resistor_10_ohm_v1 = lambda resistor_tempetature: 10+max(0.2*(resistor_tempetature-25),0)
+resistor_5_ohm_v1 = lambda resistor_tempetature: 5+max(0.05*(resistor_tempetature-25),0)
+resistor_10_ohm_v1 = lambda resistor_tempetature: 10+max(0.05*(resistor_tempetature-25),0)
 
 R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 3, resistance_function = resistor_10_ohm_v1, heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R1)
@@ -30,7 +32,7 @@ components.append(R2)
 R3 = component_classes.resistorModel(name = "R3", node_p = 4, node_n = 1, resistance_function =resistor_5_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R3)
 
-R4 = component_classes.resistorModel(name = "R4", node_p = 5, node_n = 0, resistance_function =resistor_10_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
+R4 = component_classes.resistorModel(name = "R4", node_p = 5, node_n = 0, resistance_function =resistor_5_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R4)
 
 # DEFINE INDUCTORS
@@ -102,17 +104,35 @@ for node in all_nodes:
     
 
 #start simulation ===============================================================
-max_time_step = 1e-2 #seconds
+max_time_step = 5e-3 #seconds
 min_time_step = 1e-9 #seconds
 
 time_step_now = min_time_step #seconds
-simulation_time = 1 #seconds
+simulation_time = 10 #seconds
 time_now = 0 #seconds
 
+sample_record_interval = [0, 10]
 
-MAX_RESISTOR_TEMPERATURE_CHANGE = 2.5 #celcius
-MAX_CAPACITOR_VOLTAGE_CHANGE = 0.05 #volts
-MAX_INDUCTOR_CURRENT_CHANGE = 0.05 #amperes
+interested_unknowns = {
+    "node_voltage": {
+        "node_names":[], #for node x, add "V_x"
+    },
+   "inductor_current": {
+        "inductor_names":["L1"], #for inductor x, add "L_x"
+    },
+   "capacitor_voltage": {
+        "capacitor_names":["C1"], #for capacitor x, add "C_x"
+   },
+   "resistor_temperature": {
+        "resistor_names":["R1"], #for resistor x, add "R_x"
+   } 
+   
+}
+samples = [] #list of lists, each list contains the values of the interested unknowns at a certain time
+
+MAX_RESISTOR_TEMPERATURE_CHANGE = 0.5 #celcius
+MAX_CAPACITOR_VOLTAGE_CHANGE = 0.010 #volts
+MAX_INDUCTOR_CURRENT_CHANGE = 0.010 #amperes
 
 last_percent_printed = 0
 while time_now < simulation_time:
@@ -208,7 +228,6 @@ while time_now < simulation_time:
     #             print(unknown, val)
     #=====================================================================================================
 
-
     #update component states
     should_increase_time_step = True
     for component in components:
@@ -246,4 +265,61 @@ while time_now < simulation_time:
 
     time_now = time_now + time_step_now
 
+    #append the values of the interested unknowns to the samples list
+    if(time_now >= sample_record_interval[0] and time_now <= sample_record_interval[1]):
+        sample_now = {"time": time_now}
+        for node_name in interested_unknowns["node_voltage"]["node_names"]:  
+            sample_now[node_name] = approximated_solution[unknowns[node_name]][0]          
+        for capacitor_name in interested_unknowns["capacitor_voltage"]["capacitor_names"]:
+            for component in components:
+                if component.NAME == capacitor_name:
+                    sample_now[f"V_{capacitor_name}"] = component.get_voltage()
+                    break
+        for inductor_name in interested_unknowns["inductor_current"]["inductor_names"]:
+            for component in components:
+                if component.NAME == inductor_name:
+                    sample_now[f"I_{inductor_name}"] = component.get_current()
+                    break
+        for resistor_name in interested_unknowns["resistor_temperature"]["resistor_names"]:
+            for component in components:
+                if component.NAME == resistor_name:
+                    sample_now[f"T_{resistor_name}"] = component.get_temperature()
+                    break
+        
+        samples.append(sample_now)
+
+# Extract the variable names (keys) from the first dictionary, excluding 'time'
+variable_names = [key for key in samples[0].keys() if key != 'time']
+# Create a dictionary to store the values for each variable
+data = {var_name: [] for var_name in variable_names}
+times = []
+
+# Extract the data from the dictionaries
+for sample in samples:
+    times.append(sample['time'])
+    for var_name in variable_names:
+        data[var_name].append(sample[var_name])
+
+# Create a plot for each variable
+num_vars = len(variable_names)
+plt.figure(figsize=(10, num_vars * 3))
+
+for i, var_name in enumerate(variable_names, 1):
+    plt.subplot(num_vars, 1, i)
+    plt.plot(times, data[var_name], label=var_name)
+    # Set y-axis scale to 1
+    y_max = max(data[var_name])+5
+    y_min = min(data[var_name])-5
+    plt.ylim(y_min, y_max)
+
+    plt.xlabel('Time')
+    plt.ylabel(var_name)
+    plt.title(f'{var_name} vs Time')
+    plt.grid(True)
+    plt.legend()
+
+# Adjust layout and show the plots
+
+plt.tight_layout()
+plt.show()
 
