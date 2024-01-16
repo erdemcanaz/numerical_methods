@@ -14,6 +14,8 @@ V1 = component_classes.voltageSourceModel(name = "V1", node_p = 1, node_n = 0, t
 components.append(V1)
 
 # DEFINE CURRENT SOURCES
+I1 = component_classes.currentSourceModel(name = "I1", node_p = 3, node_n = 0, type = "dc", type_dict = {"dc_current": -10})
+components.append(I1)
 
 # DEFINE RESISTORS
 resistor_5_ohm_v1 = lambda resistor_tempetature: 5+max(0.1*(resistor_tempetature-25),0)
@@ -21,7 +23,6 @@ resistor_10_ohm_v1 = lambda resistor_tempetature: 10+max(0.2*(resistor_tempetatu
 
 R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 3, resistance_function = resistor_10_ohm_v1, heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R1)
-
 
 R2 = component_classes.resistorModel(name = "R2", node_p = 3, node_n = 0, resistance_function =resistor_5_ohm_v1 , heat_capacity = 0.1, heat_transfer_coefficient = 0.1, resistor_temperature = 25)
 components.append(R2)
@@ -51,7 +52,7 @@ for component in components:
         unknown_index_counter += 1
 
 number_of_unknowns = len(unknowns)
-#=========================CHECK IF THE CIRCUIT IS VALID=============================
+#=========================CHECK IF THE CIRCUIT IS VALID=============================      
 #check if the component names are unique
 for component_index, component in enumerate(components):
   for other_component_index, other_component in enumerate(components):
@@ -94,7 +95,6 @@ simulation_time = max_time_step-0.0001 #seconds
 
 time_now = 0 #seconds
 while time_now < simulation_time:
-
     
     #append ground node information 
     info_matrix = np.zeros((1, number_of_unknowns))
@@ -126,7 +126,7 @@ while time_now < simulation_time:
       
         A = np.zeros((1, number_of_unknowns))
         B = np.zeros((1,1))
-        for component in components:      
+        for component in components:     
 
             component_p = component.NODE_P
             component_n = component.NODE_N
@@ -149,6 +149,14 @@ while time_now < simulation_time:
                     A[0, matching_voltage_source_current_index] = 1
                 else: #negative terminal is connected to the node, current is entering
                     A[0, matching_voltage_source_current_index] = -1
+            elif(component_category == "CURRENT-SOURCE"):
+                current = component.get_current(t=time_now)
+                if matching_node == component_p: #positive terminal is connected to the node, current is leaving
+                    B[0,0] += -current
+                else:
+                    B[0,0] += current
+                   
+                   
         info_matrix = np.append(info_matrix, A, axis=0)
         result_vector = np.append(result_vector, B, axis=0)
     

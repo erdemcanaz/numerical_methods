@@ -61,8 +61,56 @@ class voltageSourceModel:
         else:
             raise ValueError(f"Type of the voltage source {self.NAME} is not supported. Supported types are {self.ALLOWED_TYPES}")
 
+class currentSourceModel:
+    def __init__(self, name, node_p= None, node_n = None , type = "", type_dict = {}):
+        #name : name of the voltage source
+        #node1 : positive node according to passive sign convention
+        #node2 : negative node according to passive sign convention
+        #type : type of the voltage source (dc, sine, pulse)
+        #type_dict : dictionary containing the corresponding parameters of the voltage source type                 
+        self.NAME = name
+        self.NODE_P = node_p
+        self.NODE_N = node_n
+        self.TYPE = None
+        self.TYPE_DICT = None
 
+        self.ALLOWED_TYPES = ["dc", "sine", "pulse"]
+        self.TYPE_REQUIREMENTS = {
+            "dc":["dc_current"],
+            "sine":["dc_offset", "amplitude", "frequency", "phase_shift_angle"],
+            "pulse":["dc_offset", "amplitude", "normalized_duty", "period"]
+        }
+        if type not in self.ALLOWED_TYPES:
+            raise ValueError(f"Type of the current source '{name}' is not supported. Supported types are {self.ALLOWED_TYPES}")
+        for key in self.TYPE_REQUIREMENTS[type]:
+            if key not in type_dict.keys():
+                raise ValueError(f"'{key}' is not given for the current source {name}.")
+        self.TYPE = type
+        self.TYPE_DICT = type_dict
+    
+    def get_component_category(self):
+        return "CURRENT-SOURCE"
 
+    def get_current(self, t):
+        if self.TYPE == "dc":
+            return self.TYPE_DICT["dc_current"]
+        elif self.TYPE == "sine":
+            dc_offset = self.TYPE_DICT["dc_offset"]
+            amplitude = self.TYPE_DICT["amplitude"]
+            frequency = self.TYPE_DICT["frequency"]
+            phase_shift_radian = self.TYPE_DICT["phase_shift_angle"]*0.0174532925 #degree to radian
+            dc_offset = self.TYPE_DICT["dc_offset"]
+            return dc_offset + amplitude*math.sin(2*math.pi*frequency*t + phase_shift_radian)
+        elif self.TYPE == "pulse":
+            dc_offset = self.TYPE_DICT["dc_offset"]
+            amplitude = self.TYPE_DICT["amplitude"]
+            normalized_duty = self.TYPE_DICT["normalized_duty"]
+            period = self.TYPE_DICT["period"]
+            is_on = (t % period) < (normalized_duty*period)
+            return  dc_offset + amplitude*is_on
+        else:
+            raise ValueError(f"Type of the voltage source {self.NAME} is not supported. Supported types are {self.ALLOWED_TYPES}")
+        
 class resistorModel:
     def __init__(self, name, node_p= None, node_n = None , resistance_function = None, heat_capacity = None, heat_transfer_coefficient = None, resistor_temperature = None):
         #name : name of the resistor
