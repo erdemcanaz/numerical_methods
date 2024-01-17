@@ -1,7 +1,6 @@
-import math, copy
+import math, copy, time
 
-
-def calculate_numeric_gradient(f: callable, initial_position: list[int], dx= 1e-6) -> float:
+def calculate_numeric_gradient(f: callable, initial_position: list[float], dx= 1e-6) -> float:
     number_of_variables = len(initial_position)
     gradient = []
 
@@ -14,8 +13,6 @@ def calculate_numeric_gradient(f: callable, initial_position: list[int], dx= 1e-
         position_for_ith_var[i] -= dx    
 
     return gradient
-
-
 
 def dichotomous_search(f = None, interval = None , desired_interval_length = 1e-6, EPS = 1e-9, ITMAX = 75, verbose = True) -> float:
     # f is the function to be minimized
@@ -124,7 +121,50 @@ def fibonacci_search(f: callable, interval: list, number_of_fibonacci_terms: int
 
     return (interval[1]+interval[0])/2
 
+def steepest_descent(f:callable, initial_position: list[float], MAX_FUNCTION_CHANGE = 1, MAX_ALFA = 32, EPS = 1e-9, ITMAX = 75, verbose = True) -> float:
+    # f is the function to be minimized
+    # initial_position is the initial guess of the minimum
+    # MAX_FUNCTION_CHANGE is the maximum change in the function value after each iteration
+    # MAX_ALFA is the maximum value of alfa (multiplication factor of the gradient)
+    # EPS is the absolute error tolerance of the gradient norm
+    # ITMAX is the maximum number of iterations
+    # verbose is a boolean that determines whether or not to print the iterations
+
+    if(verbose): print("\nexecution of steepest descent")
+
+    iteration_counter = 0
+    while iteration_counter < ITMAX:
+        if(verbose): print("iteration: ", iteration_counter, " position: ", initial_position, " function value: ", f(initial_position))
+
+        gradient = calculate_numeric_gradient(f=f, initial_position=initial_position, dx = EPS/10)
+        gradient_norm = math.sqrt(sum([i**2 for i in gradient]))
+        if gradient_norm < EPS:
+            if(verbose): print("steepest descent reached a local minimum (gradient norm < EPS): ", initial_position)
+            return initial_position
         
+        alfa_i =  min(MAX_FUNCTION_CHANGE/gradient_norm, MAX_ALFA)
+
+        while True:
+            new_position = []
+            for variable_index, position_variable in enumerate(initial_position):
+                next_position_variable = position_variable - alfa_i*gradient[variable_index]
+                new_position.append(next_position_variable)
+
+            if f(new_position) < f(initial_position):
+                initial_position = new_position
+                break
+        
+            print("     alfa_i: ", alfa_i, "gradient norm: ", gradient_norm, "function value: ", f(initial_position))
+            alfa_i /= 2
+
+            if(alfa_i < 1e-15):
+                if(verbose): print("steepest descent reached a local minimum (alfa): " , initial_position)
+                return initial_position
+        
+        iteration_counter += 1
+
+    if(verbose): print("steepest descent reached a local minimum (iteration): ", initial_position)
+    return initial_position
 
 
 
