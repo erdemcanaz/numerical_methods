@@ -57,7 +57,7 @@ class voltageSourceModel:
             normalized_duty = self.TYPE_DICT["normalized_duty"]
             period = self.TYPE_DICT["period"]
             is_on = (t % period) < (normalized_duty*period)
-            return  dc_offset + amplitude*is_on
+            return  dc_offset + amplitude*is_on        
         else:
             raise ValueError(f"Type of the voltage source {self.NAME} is not supported. Supported types are {self.ALLOWED_TYPES}")
 
