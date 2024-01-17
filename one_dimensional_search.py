@@ -7,6 +7,7 @@ def dichotomous_search(f = None, interval = None , desired_interval_length = 1e-
     # EPS is the absolute error tolerance
     # ITMAX is the maximum number of iterations
     # verbose is a boolean that determines whether or not to print the iterations
+    if(verbose): print("\nexecution of dichotomous search")
 
     iteration_counter = 0
     while iteration_counter < ITMAX:
@@ -26,7 +27,6 @@ def dichotomous_search(f = None, interval = None , desired_interval_length = 1e-
 
         iteration_counter += 1
 
-
 def golden_section_search(f: callable , interval: list, desired_interval_length = 1e-6, ITMAX = 75, verbose = True) -> float:
     # <--a0-------b1-------a1-------b0-->
     # f is the function to be minimized
@@ -34,6 +34,7 @@ def golden_section_search(f: callable , interval: list, desired_interval_length 
     # desired_interval_length is the length of the interval that we want to achieve
     # ITMAX is the maximum number of iterations
     # verbose is a boolean that determines whether or not to print the iterations
+    if(verbose): print("\nexecution of golden section search")
 
     GOLDEN_RATIO = 0.61803398875 # (math.sqrt(5) - 1)/2    
     COMPLEMENTARY_GOLDEN_RATIO = 1 - GOLDEN_RATIO
@@ -64,8 +65,49 @@ def golden_section_search(f: callable , interval: list, desired_interval_length 
 
         iteration_counter += 1
 
-        
+def fibonacci_search(f: callable, interval: list, number_of_fibonacci_terms: int, verbose = True) -> float:
+    # f is the function to be minimized
+    # interval is a list of two numbers, the left and right endpoints of the interval
+    # number_of_fibonacci_terms is the number of fibonacci terms to be used
+    # ITMAX is the maximum number of iterations
+    # verbose is a boolean that determines whether or not to print the iterations
+
+    if(verbose):
+        print("\nexecution of fibonacci search")
+        print("initial interval: ", interval)
+
+    fibonacci_terms = [1, 2]
+    initial_term = 1
+    for i in range(number_of_fibonacci_terms-2):
+        fibonacci_terms.append(fibonacci_terms[i] + fibonacci_terms[i+1])
     
+    error = abs(interval[1] - interval[0])/fibonacci_terms[-1]
+
+    for i in range(number_of_fibonacci_terms-2):
+        number_of_sections = fibonacci_terms[-(i+1)]
+        lenght_of_section = abs(interval[1] - interval[0])
+        del_x = lenght_of_section/number_of_sections
+        
+        x_1 = interval[0]+ del_x * fibonacci_terms[-(i+3)]
+        x_2 = interval[0]+ del_x * fibonacci_terms[-(i+2)]
+
+        y_1 = f(x_1)
+        y_2 = f(x_2)
+
+        if(verbose): print("iteration: ", i+1, " interval: ", interval, " number of sections: ", number_of_sections)
+        if y_1 < y_2:
+            interval[1] = x_2
+        else:
+            interval[0] = x_1
+
+    if(verbose): 
+        print("final interval: ", interval)
+        print("result: ", (interval[1]+interval[0])/2)
+        print("error: ", error)
+
+    return (interval[1]+interval[0])/2
+
+        
 
 
 

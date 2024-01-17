@@ -15,4 +15,4 @@ f_1 = lambda x: (x**3)/3 -(x**2)/2 - x - 1
 
 r = ods.dichotomous_search(f=f_1, interval=[1, 2], desired_interval_length=1e-6, EPS=1e-9, ITMAX=75, verbose=True)
 r = ods.golden_section_search(f=f_1, interval=[1, 2], desired_interval_length=1e-6, ITMAX=75, verbose=True)
-
+r = ods.fibonacci_search(f=f_1, interval=[1, 2], number_of_fibonacci_terms= 25, verbose=True)
