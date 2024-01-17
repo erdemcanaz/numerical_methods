@@ -12,7 +12,10 @@ root_3_2_prime = lambda x: 3*(x**2)
 
 # For one dimensional search
 f_1 = lambda x: (x**3)/3 -(x**2)/2 - x - 1
+f_2 = lambda var_list: (var_list[0]**2) + 3*(var_list[1]**2) - 1
 
 r = ods.dichotomous_search(f=f_1, interval=[1, 2], desired_interval_length=1e-6, EPS=1e-9, ITMAX=75, verbose=True)
 r = ods.golden_section_search(f=f_1, interval=[1, 2], desired_interval_length=1e-6, ITMAX=75, verbose=True)
 r = ods.fibonacci_search(f=f_1, interval=[1, 2], number_of_fibonacci_terms= 25, verbose=True)
+
+r = ods.calculate_numeric_gradient(f=f_2, initial_position=[1, 2], dx= 1e-6)

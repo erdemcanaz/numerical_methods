@@ -1,4 +1,21 @@
-import math
+import math, copy
+
+
+def calculate_numeric_gradient(f: callable, initial_position: list[int], dx= 1e-6) -> float:
+    number_of_variables = len(initial_position)
+    gradient = []
+
+    position_for_ith_var = copy.deepcopy(initial_position)
+    for i in range(number_of_variables):
+        position_for_ith_var[i] += dx
+        f_initial = f(initial_position)
+        f_for_ith_var = f(position_for_ith_var)
+        gradient.append((f_for_ith_var - f_initial)/dx)
+        position_for_ith_var[i] -= dx    
+
+    return gradient
+
+
 
 def dichotomous_search(f = None, interval = None , desired_interval_length = 1e-6, EPS = 1e-9, ITMAX = 75, verbose = True) -> float:
     # f is the function to be minimized
