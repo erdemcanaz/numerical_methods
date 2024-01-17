@@ -61,13 +61,13 @@ resistor_1_ohm_v1 = lambda resistor_tempetature: 1+max(0.00*(resistor_tempetatur
 resistor_3_ohm_v1 = lambda resistor_tempetature: 3+max(0.00*(resistor_tempetature-25),0)
 resistor_5_ohm_v1 = lambda resistor_tempetature: 5+max(0.05*(resistor_tempetature-25),0)
 resistor_10_ohm_v1 = lambda resistor_tempetature: 10+max(0.05*(resistor_tempetature-25),0)
-
+resistor_50_ohm_v1 = lambda resistor_tempetature: 50+max(0.05*(resistor_tempetature-25),0)
 resistor_10_ohm_v2 = lambda resistor_temperature: 10
 resistor_1_ohm_v2 = lambda resistor_temperature: 1
 resistor_25mohm_v2 = lambda resistor_temperature: 0.001
 resistor_30_ohm_v2 = lambda resistor_temperature: 30
 
-R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 1, resistance_function = resistor_30_ohm_v2, heat_capacity = 0.1, heat_transfer_coefficient = 10e-2, resistor_temperature = 25)
+R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 1, resistance_function = resistor_50_ohm_v1, heat_capacity = 0.1, heat_transfer_coefficient = 10e-2, resistor_temperature = 25)
 components.append(R1)
 
 R2 = component_classes.resistorModel(name = "R2", node_p = 3, node_n = 0, resistance_function = resistor_10_ohm_v2, heat_capacity = 0.1, heat_transfer_coefficient = 10e-2, resistor_temperature = 25)
@@ -84,8 +84,8 @@ components.append(L1)
 # DEFINE CAPCACITORS
 capacitor_10uF_v1 = lambda capacitor_voltage: 10e-6
 capacitor_2uF_v1 = lambda capacitor_voltage: 2e-6
-
-C1 = component_classes.capacitorModel(name = "C1", node_p = 2, node_n = 0, capacitance_function = capacitor_2uF_v1, initial_voltage = 0)
+capacitor_50uF_v1 = lambda capacitor_voltage: 50e-6
+C1 = component_classes.capacitorModel(name = "C1", node_p = 2, node_n = 0, capacitance_function = capacitor_50uF_v1, initial_voltage = 0)
 components.append(C1)
 
 #define unknowns
