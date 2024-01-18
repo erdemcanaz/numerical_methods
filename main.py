@@ -27,3 +27,7 @@ r = one_dimensional_search.steepest_descent(f=f_3, initial_position=[1, 1], MAX_
 Q=[[3,-1,-1],[-1,2,0],[-1,0,4]]
 c = [1, -2, 3]
 r = unconstrained_optimization.convex_quadrature_direct_solver(f_conv_quad= f_3, Q=Q, c=c, verbose=True)
+
+Q = [[2,0],[0,4]]
+c = [0,0]
+r = unconstrained_optimization.convex_quadrature_steepest_descent_minimizer(f_conv_quad= f_3, Q=Q, c=c, x_vec=[1, 1], EPS = 1e-9, ITMAX = 25, verbose = True)
