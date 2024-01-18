@@ -165,6 +165,3 @@ def steepest_descent(f:callable, initial_position: list[float], MAX_FUNCTION_CHA
 
     if(verbose): print("steepest descent reached a local minimum (iteration): ", initial_position)
     return initial_position
-
-
-
