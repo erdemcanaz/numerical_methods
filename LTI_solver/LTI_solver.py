@@ -46,8 +46,8 @@ V1_dict = {
 
 V2_dict = {
     "dc_offset":0,
-    "amplitude":60,
-    "frequency":100,
+    "amplitude":10,
+    "frequency":20,
     "phase_shift_angle":0
 }
 
@@ -75,7 +75,7 @@ resistor_1_ohm_v2 = lambda resistor_temperature: 1
 resistor_25mohm_v2 = lambda resistor_temperature: 0.001
 resistor_30_ohm_v2 = lambda resistor_temperature: 30
 
-R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 0, resistance_function = resistor_5_ohm_v2, heat_capacity = 0.1, heat_transfer_coefficient = 10e-2, resistor_temperature = 25)
+R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 0, resistance_function = resistor_50_mohm_v1, heat_capacity = 0.1, heat_transfer_coefficient = 34e-2, resistor_temperature = 25)
 components.append(R1)
 
 #R2 = component_classes.resistorModel(name = "R2", node_p = 3, node_n = 0, resistance_function = resistor_10_ohm_v2, heat_capacity = 0.1, heat_transfer_coefficient = 10e-2, resistor_temperature = 25)
@@ -86,7 +86,7 @@ components.append(R1)
 inductor_1mH_v1 = lambda inductor_current: 1e-3
 inductor_1mH_saturation_v1 = lambda inductor_current: 0.001 + 0.02*(math.pow(math.e, -(abs(inductor_current/2))))
 
-L1 = component_classes.inductorModel(name = "L1", node_p = 1, node_n = 2, inductance_function = inductor_1mH_v1, initial_current = 0)
+L1 = component_classes.inductorModel(name = "L1", node_p = 1, node_n = 2, inductance_function = inductor_1mH_saturation_v1, initial_current = 0)
 components.append(L1)
 
 # DEFINE CAPCACITORS
