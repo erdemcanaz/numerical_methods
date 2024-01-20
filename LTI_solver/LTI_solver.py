@@ -3,23 +3,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pprint import pprint
 import math
-
+import time
 ambient_temperature = 25 #celcius, 25 is the room temperature
 
-max_time_step = 5e-6 #seconds
+max_time_step = 5e-1 #seconds
 min_time_step = 1e-9 #seconds
 time_step_multiplier = 1.1
 time_step_now = min_time_step #seconds
-simulation_end_time = 0.1 #seconds
-sample_record_interval = [0,5]
+simulation_end_time = 1 #seconds
+sample_record_interval = [0.450,0.580]
 
-MAX_RESISTOR_TEMPERATURE_CHANGE = 25 #celcius
-MAX_CAPACITOR_VOLTAGE_CHANGE = 0.010 #volts
-MAX_INDUCTOR_CURRENT_CHANGE = 0.05 #amperes
+simulation_start_time = time.time()
+
+MAX_RESISTOR_TEMPERATURE_CHANGE = 1000 #celcius
+MAX_CAPACITOR_VOLTAGE_CHANGE = 0.31 #volts
+MAX_INDUCTOR_CURRENT_CHANGE = 0.000085 #amperes
 
 interested_unknowns = {
     "node_voltage": {
-        "node_names":["V_1"], #for node x, add "V_x"
+        "node_names":[], #for node x, add "V_x"
     },
    "inductor_current": {
         "inductor_names":["L1"], #for inductor x, add "L_x"
@@ -36,14 +38,15 @@ interested_unknowns = {
 ground_node = 0
 components = []
 
+#"sine":["dc_offset", "amplitude", "frequency", "phase_shift_angle"],
 # DEFINE VOLTAGE SOURCES 
 V1_dict = {
     "dc_offset":0,
-    "amplitude":10,
-    "normalized_duty":0.50,
-    "period":0.001
+    "amplitude":310,
+    "frequency":50,
+    "phase_shift_angle":0
 }
-V1 = component_classes.voltageSourceModel(name = "V1", node_p = 1, node_n = 0, type = "pulse", type_dict = V1_dict)
+V1 = component_classes.voltageSourceModel(name = "V1", node_p = 1, node_n = 0, type = "sine", type_dict = V1_dict)
 components.append(V1)
 
 
@@ -57,7 +60,7 @@ components.append(V1)
 
 resistor_25_mohm_v1 = lambda resistor_tempetature: 0.025+max(0.00*(resistor_tempetature-25),0)
 resistor_50_mohm_v1 = lambda resistor_tempetature: 0.05+max(0.00*(resistor_tempetature-25),0)
-resistor_1_ohm_v1 = lambda resistor_tempetature: 1+max(0.00*(resistor_tempetature-25),0)
+resistor_1_ohm_v1 = lambda resistor_tempetature: 1
 resistor_3_ohm_v1 = lambda resistor_tempetature: 3+max(0.00*(resistor_tempetature-25),0)
 resistor_5_ohm_v1 = lambda resistor_tempetature: 5+max(0.05*(resistor_tempetature-25),0)
 resistor_10_ohm_v1 = lambda resistor_tempetature: 10+max(0.05*(resistor_tempetature-25),0)
@@ -67,25 +70,24 @@ resistor_1_ohm_v2 = lambda resistor_temperature: 1
 resistor_25mohm_v2 = lambda resistor_temperature: 0.001
 resistor_30_ohm_v2 = lambda resistor_temperature: 30
 
-R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 1, resistance_function = resistor_50_ohm_v1, heat_capacity = 0.1, heat_transfer_coefficient = 10e-2, resistor_temperature = 25)
+R1 = component_classes.resistorModel(name = "R1", node_p = 2, node_n = 1, resistance_function = resistor_1_ohm_v1, heat_capacity = 0.1, heat_transfer_coefficient = 10e-2, resistor_temperature = 25)
 components.append(R1)
 
-R2 = component_classes.resistorModel(name = "R2", node_p = 3, node_n = 0, resistance_function = resistor_10_ohm_v2, heat_capacity = 0.1, heat_transfer_coefficient = 10e-2, resistor_temperature = 25)
-components.append(R2)
-
-
 # DEFINE INDUCTORS
+inductor_0p5mH_v1 = lambda inductor_current: 5e-4
 inductor_10mH_v1 = lambda inductor_current: 1e-2
 inductor_10mH_saturation_v1 = lambda inductor_current: 0.001 + 0.02*(math.pow(math.e, -(abs(inductor_current/2))))
 
-L1 = component_classes.inductorModel(name = "L1", node_p = 3, node_n = 1, inductance_function = inductor_10mH_v1, initial_current = 0)
+L1 = component_classes.inductorModel(name = "L1", node_p = 2, node_n = 3, inductance_function = inductor_0p5mH_v1, initial_current = 0)
 components.append(L1)
 
 # DEFINE CAPCACITORS
+capacitor_1uF_v1 = lambda capacitor_voltage: 1e-6
 capacitor_10uF_v1 = lambda capacitor_voltage: 10e-6
 capacitor_2uF_v1 = lambda capacitor_voltage: 2e-6
 capacitor_50uF_v1 = lambda capacitor_voltage: 50e-6
-C1 = component_classes.capacitorModel(name = "C1", node_p = 2, node_n = 0, capacitance_function = capacitor_50uF_v1, initial_voltage = 0)
+
+C1 = component_classes.capacitorModel(name = "C1", node_p = 3, node_n = 0, capacitance_function = capacitor_1uF_v1, initial_voltage = 0)
 components.append(C1)
 
 #define unknowns
@@ -273,7 +275,7 @@ while time_now < simulation_end_time:
             should_increase_time_step = should_increase_time_step and b    
             #print(f"Inductor current: {component.get_current()}, del_I: {del_I}")
 
-    #update states if the state changes are small enough, otherwise decrease the time step   
+    #If the state changes are small enough increase time-step, otherwise decrease it   
     if should_increase_time_step:
         time_step_now = min(max_time_step, time_step_now*time_step_multiplier)
     else:
@@ -303,6 +305,9 @@ while time_now < simulation_end_time:
                     break
         
         samples.append(sample_now)
+
+simulation_end_time = time.time()
+print(f"Simulation time: {simulation_end_time - simulation_start_time:.2f} seconds")
 
 # Extract the variable names (keys) from the first dictionary, excluding 'time'
 variable_names = [key for key in samples[0].keys() if key != 'time']
